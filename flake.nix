@@ -36,7 +36,8 @@
         packwizUrl
       , # Indicate that we accept the eula
         acceptEula
-      ,
+      , # Directory in the continar to backup to
+        backupDirectory ? "/var/minecraft/backup/"
       }:
       nixpkgs.lib.nixosSystem {
         # TODO make generic in system after I've made the java flake do as such
