@@ -47,9 +47,16 @@ announce "Server backup started, the lag commences."
 ###
 ## Perform the backup
 ###
+# Reset the timer
+SECONDS=0
 # First save everything, then turn off chunk saving
-mcrcon -p $(cat @rconPasswordFile@) "save-all flush"
 mcrcon -p $(cat @rconPasswordFile@) "save-off"
+mcrcon -p $(cat @rconPasswordFile@) "save-all flush"
+
+# Sleep 3 seconds and run a sync just to make sure everything gets written, we don't want any of
+# those pesky "modified while backing up" errors
+sleep 3
+sync
 
 # Do the borg backup with the following options
 borg create --compression zstd,16 --list -s @backupDirectory@/minecraft::$(date "+%Y%m%d-%H%M%S")\
@@ -58,7 +65,13 @@ borg create --compression zstd,16 --list -s @backupDirectory@/minecraft::$(date 
 # After we are done with the backup, turn saving back on
 mcrcon -p $(cat @rconPasswordFile@) "save-on"
 # Tell the players that we are done
-announce "Server backup finished, the lag should subside now."
+secs=$SECONDS
+# Formatting
+if [ $secs -ge 60 ]; then
+    announce "Server backup completed in $(printf '%dm:%ds' $((secs%3600/60)) $((secs%60)))"
+else
+    announce "Server backup completed in $(printf '%ds' $((secs%60)))"
+fi
 
 # TODO add config to rclone the backup to backblaze b2
 # TODO log and announce the ammount of time and maybe statistics?
