@@ -35,8 +35,13 @@ link_file () {
 ###
 # Ensure that the server directory exists
 mkdir -p /var/minecraft/server
-# Link the properties file
-link_file @propertiesFile@ /var/minecraft/server/server.properties
+# Copy the properties file, removing it if it already exists
+[ -f /var/minecraft/server/server.properties] && rm /var/minecraft/server/server.properties
+cp @propertiesFile@ /var/minecraft/server/server.properties
+# Make it writeable so we can set the rcon password
+chmod u+w /var/minecraft/server/server.properties
+# tack on the rcon password
+echo "rcon.password=$(cat @rconPasswordFile@)" >> /var/minecraft/server/server.properties
 # Link the quilt installer
 link_file @quiltInstaller@ /var/minecraft/quilt-installer.jar
 # Accept eula if configured to do so

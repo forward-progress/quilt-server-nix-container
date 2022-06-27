@@ -35,7 +35,6 @@
     , pvp ? "true"
     , query-port ? 25565
     , rate-limit ? 0
-    , rcon-password ? ""
     , rcon-port ? "25575"
     , require-resource-pack ? "false"
     , resource-pack ? ""
@@ -90,7 +89,6 @@
         pvp=${toString pvp}
         query.port=${toString query-port}
         rate-limit=${toString rate-limit}
-        rcon.password=${rcon-password}
         rcon.port=${toString rcon-port}
         require-resource-pack=${toString require-resource-pack}
         resource-pack=${resource-pack}
