@@ -22,6 +22,23 @@ link_file () {
     # Link the source to the destination
     ln -s $1 $2
 }
+###
+## Link a directory
+##
+## If the destination already exists, this will delete the existing link and create a new one
+##
+## # Arguments
+## 1. Source
+## 2. Destination
+###
+link_dir () {
+    # Delete the destination if it already exists
+    if [[ -d $2 ]]; then
+        rm -rf $2
+    fi
+    # Link the source to the destination
+    ln -s $1 $2
+}
 
 ###
 ## Wait for network online
@@ -35,6 +52,9 @@ link_file () {
 ###
 # Ensure that the server directory exists
 mkdir -p /var/minecraft/server
+# Ensure that the world directory exists, and link it in
+mkdir -p /var/minecraft/world
+link_dir /var/minecraft/world /var/minecraft/server/world
 # Copy the properties file, removing it if it already exists
 [ -f /var/minecraft/server/server.properties] && rm /var/minecraft/server/server.properties
 cp @propertiesFile@ /var/minecraft/server/server.properties
@@ -54,14 +74,14 @@ link_file @packwizBootstrap@ /var/minecraft/server/packwiz-installer-bootstrap.j
 ###
 # Install quilt
 cd /var/minecraft
-@javaPackage@/bin/java -jar quilt-installer.jar install server @minecraftVersion@ @quiltVersion@ --download-server
+java -jar quilt-installer.jar install server @minecraftVersion@ @quiltVersion@ --download-server
 # Run packwiz to update the pack
 cd server
-@javaPackage@/bin/java -jar packwiz-installer-bootstrap.jar -g -s server @packwizUrl@
+java -jar packwiz-installer-bootstrap.jar -g -s server @packwizUrl@
 
 
 ###
 ## Start the server
 ###
 # Time to run minecraft
-@javaPackage@/bin/java -XX:+UseShenandoahGC -Xmx@ram@M -Xms@ram@M -Xmn256M -jar quilt-server-launch.jar -nogui
+java -XX:+UseShenandoahGC -Xmx@ram@M -Xms@ram@M -Xmn256M -jar quilt-server-launch.jar -nogui

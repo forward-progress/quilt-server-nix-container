@@ -35,7 +35,7 @@
     , pvp ? "true"
     , query-port ? 25565
     , rate-limit ? 0
-    , rcon-port ? "25575"
+    , rcon-port ? 25575
     , require-resource-pack ? "false"
     , resource-pack ? ""
     , resource-pack-prompt ? ""
