@@ -13,9 +13,13 @@
     # Testing container
     nixosConfigurations = {
       container =
-        makeContainer rec {
+        let
           system = "x86_64-linux";
-          rconPasswordFile = nixpkgs.legacyPackages."${system}".writeTextFile {
+          writeTextFile = nixpkgs.legacyPackages."${system}".writeTextFile;
+        in
+        makeContainer rec {
+          inherit system;
+          rconPasswordFile = writeTextFile {
             name = "rconPassword";
             text = "yepARealPassword";
           };
@@ -25,6 +29,12 @@
           packwizUrl = "https://pack.forward-progress.net/0.3-no-discord/pack.toml";
           # Indicate that we accept the eula
           acceptEula = "true";
+          b2AccountID = "00284106ead1ac40000000002";
+          b2KeyFile = writeTextFile {
+            name = "b2KeyFile";
+            text = "lol. lamo";
+          };
+          b2Bucket = "ForwardProgressServerBackup";
         };
     };
 
@@ -46,6 +56,12 @@
         acceptEula
       , # Directory in the continar to backup to
         backupDirectory ? "/var/minecraft/backup"
+      , # The B2 account id
+        b2AccountID
+      , # The file containing the b2 account key
+        b2KeyFile
+      , # The name of the b2 bucket to backup to
+        b2Bucket
       }:
       nixpkgs.lib.nixosSystem {
         # TODO make generic in system after I've made the java flake do as such
@@ -72,12 +88,15 @@
               networking.firewall.allowedTCPPorts = [ 25565 ];
 
               # Install packages
+              # FIXME: Remove this, the systemd services should not rely on it
               environment.systemPackages = with pkgs; [
                 javaPackage
                 # Rcon client
                 mcrcon
                 # Util linux for ipcs
                 util-linux
+                # backblaze b2 clent
+                backblaze-b2
               ];
 
               ###
@@ -154,16 +173,24 @@
                         src = ./scripts/backup.sh;
                         inherit backupDirectory;
                         inherit rconPasswordFile;
+                        inherit b2AccountID;
+                        inherit b2KeyFile;
+                        inherit b2Bucket;
                       };
                     in
                     {
                       serviceConfig =
                         {
                           Type = "oneshot";
+                          User = "minecraft";
+                          Group = "minecraft";
+                          UMask = "0027";
                         };
                       path = with pkgs; [
                         borgbackup
                         mcrcon
+                        rclone
+                        getent
                       ];
                       script = builtins.readFile subbedScript;
                     };

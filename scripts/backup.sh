@@ -6,6 +6,15 @@
 set -euxo pipefail
 
 ###
+## Run a command via mcrcon
+##
+## This will run the given command over mcrcon, automatically substituting in the password.
+###
+run_cmd() {
+    mcrcon -p $(cat @rconPasswordFile@) "$@"
+}
+
+###
 ## Announce something
 ##
 ## This will issue a `tellraw` over mcrcon to send an announcement message with the baked in
@@ -15,7 +24,7 @@ set -euxo pipefail
 ## 1. The text to format and announce
 ###
 announce() {
-    mcrcon -p $(cat @rconPasswordFile@) "tellraw @a [\"\",{\"text\":\"[\",\"bold\":true,\"color\":\"red\"}\
+    run_cmd "tellraw @a [\"\",{\"text\":\"[\",\"bold\":true,\"color\":\"red\"}\
         ,{\"text\":\"ANN\",\"bold\":true,\"color\":\"dark_red\"},{\"text\":\"]\",\"bold\":true,\
         \"color\":\"red\"},{\"text\":\" - \",\"bold\":true,\"color\":\"dark_gray\"},{\"text\":\
         \"$1\",\"underlined\":true,\"color\":\"gold\"}]"
@@ -32,17 +41,15 @@ if [[ ! -d @backupDirectory@/minecraft ]]; then
 fi
 
 # Make some announcments and wait
-announce "Server backup in 5 minutes, there may be some lag."
-sleep 1
-for i in $(seq 4 -1 2); do
+for i in $(seq 5 -1 2); do
     announce "Server backup in $i minutes."
-    sleep 1
+    sleep 60
 done
 announce "Server backup in 1 minute."
-sleep 1
-announce "Server backup in 30 seconds, prepare for lag."
-sleep 1
-announce "Server backup started, the lag commences."
+sleep 30
+announce "Server backup in 30 seconds."
+sleep 30
+announce "Server backup starting, there may be some lag."
 
 ###
 ## Perform the backup
@@ -50,8 +57,8 @@ announce "Server backup started, the lag commences."
 # Reset the timer
 SECONDS=0
 # First save everything, then turn off chunk saving
-mcrcon -p $(cat @rconPasswordFile@) "save-off"
-mcrcon -p $(cat @rconPasswordFile@) "save-all flush"
+run_cmd "save-off"
+run_cmd "save-all flush"
 
 # Sleep 3 seconds and run a sync just to make sure everything gets written, we don't want any of
 # those pesky "modified while backing up" errors
@@ -63,15 +70,40 @@ borg create --compression zstd,16 --list -s @backupDirectory@/minecraft::$(date 
     /var/minecraft/server
 
 # After we are done with the backup, turn saving back on
-mcrcon -p $(cat @rconPasswordFile@) "save-on"
+run_cmd "save-on"
 # Tell the players that we are done
 secs=$SECONDS
 # Formatting
 if [ $secs -ge 60 ]; then
-    announce "Server backup completed in $(printf '%dm:%ds' $((secs%3600/60)) $((secs%60)))"
+    announce "Server backup completed in $(printf '%dm:%ds' $((secs%3600/60)) $((secs%60)))."
 else
-    announce "Server backup completed in $(printf '%ds' $((secs%60)))"
+    announce "Server backup completed in $(printf '%ds' $((secs%60)))."
 fi
+announce "Uploading backup.";
 
-# TODO add config to rclone the backup to backblaze b2
-# TODO log and announce the ammount of time and maybe statistics?
+###
+## Copy our backup to backblaze
+###
+# Reset the seconds timer
+SECONDS=0
+# Update the rlone configuraion
+mkdir -p ~/.config/rclone
+[ -f ~/.config/rclone/rclone.conf  ] && rm ~/.config/rclone/rclone.conf
+cat <<EOF > ~/.config/rclone/rclone.conf
+[b2]
+    type = b2
+    account = @b2AccountID@
+    key = $(cat @b2KeyFile@)
+EOF
+# Make the backup
+rclone copy @backupDirectory@ b2:@b2Bucket@/ -P --transfers 16
+# Report on the upload status
+secs=$SECONDS
+# Formatting
+if [ $secs -ge 60 ]; then
+    announce "Server backup uploaded in $(printf '%dm:%ds' $((secs%3600/60)) $((secs%60)))."
+else
+    announce "Server backup uploaded in $(printf '%ds' $((secs%60)))."
+fi
+# FIN
+announce ""
