@@ -47,14 +47,10 @@ if [[ ! -d @backupDirectory@/minecraft ]]; then
 fi
 
 # Make some announcments and wait
-for i in $(seq 5 -1 2); do
-    announce "Server backup in $i minutes."
-    sleep 60
-done
+announce "Server backup in 5 minutes."
+sleep 240
 announce "Server backup in 1 minute."
-sleep 30
-announce "Server backup in 30 seconds."
-sleep 30
+sleep 60
 announce "Server backup starting, there may be some lag."
 
 ###
