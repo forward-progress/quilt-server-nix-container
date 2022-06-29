@@ -50,6 +50,8 @@ link_dir () {
 ###
 ## Directory setup
 ###
+# Ensure that we own the server directory
+/run/wrappers/bin/own-home
 # Ensure that the server directory exists
 mkdir -p /var/minecraft/server
 # Ensure that the world directory exists, and link it in

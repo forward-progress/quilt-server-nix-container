@@ -125,6 +125,7 @@ with lib; {
   };
 
   config = mkIf config.forward-progress.services.minecraft.enable {
+    # Setup the user
     users = {
       # Create the minecraft group
       groups."minecraft" = { };
@@ -134,6 +135,15 @@ with lib; {
         home = "/var/minecraft";
         createHome = true;
         isNormalUser = true;
+      };
+    };
+    # Create our setuid wrapped home owner
+    security.wrappers = {
+      own-home = {
+        setuid = true;
+        owner = "root";
+        group = "root";
+        source = ../scripts/own-home.sh;
       };
     };
     # Create the minecraft service
