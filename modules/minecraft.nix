@@ -250,7 +250,9 @@ with lib; {
           Group = "minecraft";
           UMask = "0027";
           Restart = "always";
-          KillMode = "none"; # FIXME: This is a kludge, identify a way to work around it
+          RestartSec = "30s";
+          StartLimitIntervalSec = "0";
+          KillMode = "controlgroup";
           ExecStart = startScript;
           ExecStop = stopScript;
           SuccessExitStatus = "0 1 255";
